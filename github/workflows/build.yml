@@ -1,0 +1,50 @@
+name: Android NDK Build From ZIP
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@v4
+
+    - name: Set up Java 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Install Android NDK
+      uses: android-actions/setup-android@v3
+      with:
+        ndk-version: '25.2.9519653'
+
+    - name: Unzip Source Code
+      run: |
+        # Распаковываем архив во временную папку и проверяем структуру
+        unzip imguisource_bot.zip -d extracted_source/
+        ls -R extracted_source/
+        
+        # Переносим содержимое так, чтобы папка 'bycmd' была в корне для ndk-build
+        # Если внутри архива сразу лежат jni/src, этот скрипт создаст правильную структуру
+        if [ -d "extracted_source/bycmd" ]; then
+          mv extracted_source/bycmd ./bycmd
+        else
+          mkdir bycmd
+          mv extracted_source/* ./bycmd/ 2>/dev/null || true
+        fi
+
+    - name: Compile C++ via ndk-build
+      run: |
+        cd bycmd
+        ndk-build NDK_PROJECT_PATH=. NDK_APPLICATION_MK=jni/Application.mk
+
+    - name: Upload Binary Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: compiled-external-cheat
+        path: bycmd/libs/arm64-v8a/
