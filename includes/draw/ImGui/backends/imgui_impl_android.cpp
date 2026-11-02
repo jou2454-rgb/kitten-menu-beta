@@ -1,10 +1,3 @@
-
-// ================================================================================
-// Source published by: @imguisource_bot
-// Follow: t.me/ImGui_Source_FIXNEY (ImGui Source)
-// Backup: t.me/il2cpp_src (shit src 🧨)
-// ================================================================================
-
 // dear imgui: Platform Binding for Android native app
 // This needs to be used along with the OpenGL 3 Renderer (imgui_impl_opengl3)
 
@@ -190,7 +183,7 @@ int32_t ImGui_ImplAndroid_HandleInputEvent(const AInputEvent* input_event)
         case AKEY_EVENT_ACTION_UP:
         {
             ImGuiKey key = ImGui_ImplAndroid_KeyCodeToImGuiKey(event_key_code);
-            if (key != ImGuiKey_None && (event_action == AKEY_EVENT_ACTION_DOWN || event_action == AKEY_EVENT_ACTION_UP))
+            if (key != ImGuiKey_None)
             {
                 io.AddKeyEvent(key, event_action == AKEY_EVENT_ACTION_DOWN);
                 io.SetKeyEventNativeData(key, event_key_code, event_scan_code);
@@ -286,13 +279,13 @@ void ImGui_ImplAndroid_Shutdown()
     io.BackendPlatformName = nullptr;
 }
 
-void ImGui_ImplAndroid_NewFrame(int32_t window_width, int32_t window_height)
+void ImGui_ImplAndroid_NewFrame()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)
-    //int32_t window_width = ANativeWindow_getWidth(g_Window);
-    //int32_t window_height = ANativeWindow_getHeight(g_Window);
+    int32_t window_width = ANativeWindow_getWidth(g_Window);
+    int32_t window_height = ANativeWindow_getHeight(g_Window);
     int display_width = window_width;
     int display_height = window_height;
 

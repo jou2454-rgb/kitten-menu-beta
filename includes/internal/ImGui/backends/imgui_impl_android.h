@@ -1,8 +1,3 @@
-
-// ================================================================================
-// TG: @imguisource_bot | @ImGui_Source_FIXNEY | @il2cpp_src
-// ================================================================================
-
 // dear imgui: Platform Binding for Android native app
 // This needs to be used along with the OpenGL 3 Renderer (imgui_impl_opengl3)
 
@@ -36,6 +31,6 @@ struct AInputEvent;
 IMGUI_IMPL_API bool     ImGui_ImplAndroid_Init(ANativeWindow* window);
 IMGUI_IMPL_API int32_t  ImGui_ImplAndroid_HandleInputEvent(const AInputEvent* input_event);
 IMGUI_IMPL_API void     ImGui_ImplAndroid_Shutdown();
-IMGUI_IMPL_API void     ImGui_ImplAndroid_NewFrame(int32_t window_width, int32_t window_height);
+IMGUI_IMPL_API void     ImGui_ImplAndroid_NewFrame();
 
 #endif // #ifndef IMGUI_DISABLE
