@@ -46,11 +46,14 @@ void render() {
             ImGui::Text("Unity 6 / libunity.so");
             ImGui::Text("pid: %d  base: 0x%lx", mem::game_pid, game::lib_base);
             ImGui::Separator();
+            ImGui::Text("Stats: 0x70->ydm  HP:0x10  MaxHP:0x14");
+            ImGui::Text("Team: 0x90 (byte)  Alive: 0x44");
+            ImGui::Separator();
             ImGui::TextWrapped(
-                "TypeInfo + RVA offsets filled.\n"
-                "Field offsets (kRegistryPlayerList,\n"
-                "kPlayerStats, etc) need FILL\n"
-                "via GG/CE pointer scan."
+                "FILL in GG/CE:\n"
+                "- kRegistryPlayerList (nba->player list)\n"
+                "- kPlayerPosition (Transform->pos)\n"
+                "- Camera viewProjection matrix"
             );
             break;
     }
