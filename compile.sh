@@ -1,63 +1,72 @@
-#!/system/bin/sh
+#!/data/data/com.termux/files/usr/bin/sh
 # ============================================
-# Standoff 2 ESP — сборка и запуск
-# Открой этот файл через MT Manager -> Terminal
-# или через Termux
+# Standoff 2 ESP — сборка через Termux clang++
+# Не требует ndk-build, только pkg install ndk-multilib
 # ============================================
 
 PROJ="$(cd "$(dirname "$0")" && pwd)"
-BIN="$PROJ/libs/arm64-v8a/standoff2esp"
+OUT="$PROJ/libs/arm64-v8a"
+BIN="$OUT/standoff2esp"
 INSTALL="/data/local/tmp/standoff2esp"
 
-# --- поиск NDK ---
-find_ndk() {
-    for p in \
-        "$ANDROID_NDK_HOME" \
-        /data/user/0/com.aide.clone/no_backup/ndksupport-*/android-ndk-aide \
-        /data/user/0/com.aide.web/no_backup/ndksupport-*/android-ndk-aide \
-        /data/data/com.termux/files/home/android-ndk* \
-        /sdcard/android-ndk* \
-        /sdcard/Download/android-ndk* \
-        "$HOME/android-ndk"
-    do
-        [ -d "$p" ] && [ -f "$p/ndk-build" ] && echo "$p" && return 0
-    done
-    return 1
-}
+CC="clang++"
 
-NDK_PATH="$(find_ndk)"
-if [ -z "$NDK_PATH" ]; then
-    echo "[!] NDK не найден"
-    echo ""
-    echo "Установи одним из способов:"
-    echo "  1) AIDE: Settings -> Build -> NDK Support"
-    echo "  2) Termux: pkg install ndk-multilib"
-    echo "  3) Скачай NDK и кинь в /sdcard/android-ndk"
-    echo ""
-    echo "Или укажи путь вручную:"
-    echo "  ANDROID_NDK_HOME=/путь/к/ndk sh $0"
+# проверка clang++
+if ! command -v $CC >/dev/null 2>&1; then
+    echo "[!] clang++ не найден"
+    echo "Установи: pkg install clang"
     exit 1
 fi
 
-echo "[*] NDK: $NDK_PATH"
+echo "[*] Компилятор: $(which $CC)"
 echo "[*] Проект: $PROJ"
 echo ""
 
+# --- include пути ---
+INCLUDES="\
+ -I$PROJ/includes/internal \
+ -I$PROJ/includes/internal/ImGui \
+ -I$PROJ/includes/internal/ImGui/backends \
+ -I$PROJ/includes/internal/Android_draw \
+ -I$PROJ/includes/internal/Android_touch \
+ -I$PROJ/includes/internal/native_surface \
+ -I$PROJ/includes/fonts \
+ -I$PROJ/src"
+
+# --- исходники ---
+SRCS="\
+ $PROJ/src/main.cpp \
+ $PROJ/src/func/visuals.cpp \
+ $PROJ/src/protect/oxorany.cpp \
+ $PROJ/src/ui/menu.cpp \
+ $PROJ/src/ui/bar.cpp \
+ $PROJ/src/ui/widgets/widgets.cpp \
+ $PROJ/includes/draw/Android_draw/draw.cpp \
+ $PROJ/includes/draw/Android_touch/Touch.cpp \
+ $PROJ/includes/draw/ImGui/imgui.cpp \
+ $PROJ/includes/draw/ImGui/imgui_draw.cpp \
+ $PROJ/includes/draw/ImGui/imgui_tables.cpp \
+ $PROJ/includes/draw/ImGui/imgui_widgets.cpp \
+ $PROJ/includes/draw/ImGui/backends/imgui_impl_android.cpp \
+ $PROJ/includes/draw/ImGui/backends/imgui_impl_opengl3.cpp"
+
+# --- флаги ---
+CFLAGS="-std=c++17 -O2 -fPIE -w -DANDROID -D__ANDROID_API__=26"
+LDFLAGS="-fPIE -pie -lEGL -lGLESv3 -llog -landroid -static-libstdc++"
+
 # --- сборка ---
-cd "$PROJ"
-"$NDK_PATH/ndk-build" \
-    NDK_PROJECT_PATH=. \
-    APP_BUILD_SCRIPT=jni/Android.mk \
-    NDK_APPLICATION_MK=jni/Application.mk \
-    -j4
+mkdir -p "$OUT"
 
-echo ""
+echo "[*] Компиляция..."
+$CC $CFLAGS $INCLUDES $SRCS -o "$BIN" $LDFLAGS 2>&1
 
-if [ ! -f "$BIN" ]; then
+if [ $? -ne 0 ]; then
+    echo ""
     echo "[X] Сборка ПРОВАЛЕНА"
     exit 1
 fi
 
+echo ""
 echo "[OK] Собрано: $BIN"
 echo ""
 
@@ -66,7 +75,7 @@ echo "[*] Копирую в $INSTALL..."
 su -c "cp '$BIN' '$INSTALL' && chmod 755 '$INSTALL'"
 
 if [ $? -ne 0 ]; then
-    echo "[!] Нет рута. Скопируй вручную:"
+    echo "[!] Нет рута. Запусти вручную:"
     echo "  su"
     echo "  cp $BIN $INSTALL"
     echo "  chmod 755 $INSTALL"
