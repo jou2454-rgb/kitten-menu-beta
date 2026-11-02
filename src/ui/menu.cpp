@@ -42,15 +42,15 @@ void render() {
             break;
 
         case 1: // Misc
-            ImGui::Text("Standoff 2 ESP");
-            ImGui::Text("pid: %d", 0); // заменится на реальный
-            ImGui::Text("il2cpp: 0x%lx", 0UL);
+            ImGui::Text("Standoff 2 ESP (Halloween 2026)");
+            ImGui::Text("Unity 6 / libunity.so");
+            ImGui::Text("pid: %d  base: 0x%lx", mem::game_pid, game::lib_base);
             ImGui::Separator();
             ImGui::TextWrapped(
-                "Offsets = 0x0 -> not filled.\n"
-                "Dump libil2cpp.so through\n"
-                "il2cppdumper and fill offsets\n"
-                "in src/game/game.hpp"
+                "TypeInfo + RVA offsets filled.\n"
+                "Field offsets (kRegistryPlayerList,\n"
+                "kPlayerStats, etc) need FILL\n"
+                "via GG/CE pointer scan."
             );
             break;
     }

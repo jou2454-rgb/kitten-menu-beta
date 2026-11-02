@@ -33,7 +33,7 @@ static bool wait_for_game() {
     LOGI("waiting for %s...", game::PACKAGE);
     for (int i = 0; i < 120; i++) {
         if (game::init()) {
-            LOGI("game found, pid=%d il2cpp=0x%lx", mem::game_pid, game::il2cpp_base);
+            LOGI("game found, pid=%d libunity=0x%lx", mem::game_pid, game::lib_base);
             return true;
         }
         sleep(2);

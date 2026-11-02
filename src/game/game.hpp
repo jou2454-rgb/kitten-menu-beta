@@ -1,47 +1,80 @@
 #pragma once
 #include <cstdint>
+#include <cmath>
 #include "../other/memory.hpp"
 
-// Standoff 2 — Unity il2cpp (com.axlebolt.standoff2)
-// Офсеты меняются каждое обновление. Дампь через il2cppdumper или GameGuardian.
-// Процедура: взять libil2cpp.so из /data/app/.../lib/arm64/, прогнать через
-// il2cppdumper (или Frida il2cpp bridge), найти классы ниже в dump.cs
+// Standoff 2 — Halloween 2026 (Unity 6)
+// Unity 6: libil2cpp.so + libunity.so merged → single libunity.so (217MB)
+// Offsets: offsets_remap_FINAL_1 (il2cppdump v16, ARM64 disasm verified)
 
 namespace game {
 
 constexpr const char* PACKAGE = "com.axlebolt.standoff2";
-constexpr const char* LIB_NAME = "libil2cpp.so";
+constexpr const char* LIB_NAME = "libunity.so";
 
 // ========================
-// OFFSETS — FILL из il2cppdumper
-// Дампь: il2cppdumper libil2cpp.so global-metadata.dat
-// Ищи в dump.cs классы ниже
+// TypeInfo addresses — class pointers in libunity.so
+// Pattern: base + typeinfo_addr -> Il2CppClass* -> static_fields -> singleton
 // ========================
+namespace typeinfo {
+    constexpr uintptr_t kPlayer              = 0xCD32658;  // odq (was ake)
+    constexpr uintptr_t kNetObject           = 0xCD359A0;  // wwv (was mfc)
+    constexpr uintptr_t kClientWorld         = 0xCD34DC8;  // vch (was njh)
+    constexpr uintptr_t kRegistry            = 0xCD32028;  // nba (was gat)
+    constexpr uintptr_t kStore               = 0xCD303E8;  // ibc (was gzx)
+    constexpr uintptr_t kActor               = 0xCD34C50;  // uwa (was stn)
+    constexpr uintptr_t kStats               = 0xCD360F0;  // ydm (was ylw)
+    constexpr uintptr_t kGrenadeCim          = 0xCD2EDA8;  // edu (was cim)
+    constexpr uintptr_t kCharacterBindings   = 0xCD1FA60;
+    constexpr uintptr_t kBonesDictionary     = 0xCD1F430;
+    constexpr uintptr_t kWeaponIdsType       = 0xCD2C9E0;
+    constexpr uintptr_t kTransformType       = 0xCD2BB30;
+    constexpr uintptr_t kLockdownConfig      = 0xCD268D8;  // Halloween 2026 mode
+}
 
-namespace offsets {
-    // FPSController (или PlayerController) — основной класс игрока
-    // dump.cs: class FPSController : MonoBehaviour
-    constexpr uintptr_t FPSController_TypeInfo = 0x0;  // FILL: grep "FPSController_TypeInfo" в il2cpp output
-    constexpr uintptr_t FPSController_Health = 0x0;     // FILL: поле health в FPSController
-    constexpr uintptr_t FPSController_Position = 0x0;   // FILL: transform.position или cached pos
-    constexpr uintptr_t FPSController_Team = 0x0;       // FILL: поле team (int)
-    constexpr uintptr_t FPSController_IsAlive = 0x0;    // FILL: поле isAlive (bool)
-    constexpr uintptr_t FPSController_Nickname = 0x0;   // FILL: поле nickname (string)
+// ========================
+// Managed RVA — function offsets in libunity.so
+// ========================
+namespace rva {
+    constexpr uintptr_t kPlayerGetPosition         = 0x9C9B170;  // odq.apss
+    constexpr uintptr_t kStatsGetHp                = 0x9C98DD8;  // ydm.bdqp
+    constexpr uintptr_t kStatsGetMaxHp             = 0x9C9A434;  // ydm.nfln
+    constexpr uintptr_t kStatsGetArmor             = 0x9C83428;  // ydm.tgiz
+    constexpr uintptr_t kStatsGetMaxArmor          = 0x9C89764;  // ydm.fidx
+    constexpr uintptr_t kStatsGetHelmet            = 0x9C8A4F8;  // ydm.ljbj
+    constexpr uintptr_t kWeaponPartGetContext      = 0x9C82FE0;  // uyg.qtck
+    constexpr uintptr_t kWeaponPartGetActiveWeapon = 0x9C81184;  // uyg.lwgn
+    constexpr uintptr_t kWeaponGetId               = 0x9CB3480;  // jrx.onxo
+    constexpr uintptr_t kWeaponGetMetaId           = 0x9CA6F24;  // jrx.apsm
+    constexpr uintptr_t kWeaponGetMagazineAmmo     = 0x9CB2E14;  // jrx.gqpy
+    constexpr uintptr_t kWeaponGetReserveAmmo      = 0x9CB22C8;  // jrx.mrnk
+}
 
-    // Camera
-    constexpr uintptr_t Camera_Main = 0x0;              // FILL: Camera.main singleton
-    constexpr uintptr_t Camera_ViewMatrix = 0x0;        // FILL: viewProjectionMatrix
+// ========================
+// Field offsets
+// ========================
+namespace field {
+    constexpr uintptr_t kStaticFields = 0xB8;  // Il2CppClass -> static_fields
+    constexpr uintptr_t kListItems    = 0x10;  // List<T>._items
+    constexpr uintptr_t kListCount    = 0x18;  // List<T>._size
+    constexpr uintptr_t kArrayStart   = 0x20;  // Il2CppArray first element
 
-    // PlayerList / GameManager
-    constexpr uintptr_t GameManager_Instance = 0x0;     // FILL: GameManager singleton
-    constexpr uintptr_t GameManager_PlayerList = 0x0;   // FILL: List<FPSController> players
-    constexpr uintptr_t List_Count = 0x18;              // System.Collections.Generic.List<T>._size
-    constexpr uintptr_t List_Items = 0x10;              // System.Collections.Generic.List<T>._items
+    // WeaponPart (uyg, was nrk)
+    constexpr uintptr_t kWeaponContext = 0x30;
+    constexpr uintptr_t kTeam          = 0x38;
+    constexpr uintptr_t kHitTransform  = 0x40;
+    constexpr uintptr_t kActiveWeapon  = 0x80; // was 0x78, shifted +8 Halloween 2026
 
-    // Weapon
-    constexpr uintptr_t Weapon_NoRecoil = 0x0;          // FILL: recoil float field
-    constexpr uintptr_t Weapon_NoSpread = 0x0;          // FILL: spread float field
-    constexpr uintptr_t Weapon_FireRate = 0x0;           // FILL: fireRate float field
+    // FILL from Cheat Engine / GameGuardian pointer scan on running game:
+    // attach to com.axlebolt.standoff2, find Registry singleton,
+    // scan for pointer to List<Player> inside it
+    constexpr uintptr_t kRegistryPlayerList = 0x0;  // FILL: Registry -> players list
+    constexpr uintptr_t kPlayerStats        = 0x0;  // FILL: Player(odq) -> Stats(ydm) ref
+    constexpr uintptr_t kPlayerTeamId       = 0x0;  // FILL: Player(odq) -> team int
+    constexpr uintptr_t kPlayerIsAlive      = 0x0;  // FILL: Player(odq) -> isAlive bool
+    constexpr uintptr_t kPlayerPosition     = 0x0;  // FILL: Player(odq) -> cached Vector3 pos
+    constexpr uintptr_t kStatsHp            = 0x0;  // FILL: Stats(ydm) -> hp float
+    constexpr uintptr_t kStatsMaxHp         = 0x0;  // FILL: Stats(ydm) -> maxHp float
 }
 
 struct Vector3 {
@@ -49,18 +82,81 @@ struct Vector3 {
     Vector3 operator-(const Vector3& o) const { return {x - o.x, y - o.y, z - o.z}; }
     Vector3 operator+(const Vector3& o) const { return {x + o.x, y + o.y, z + o.z}; }
     float length() const { return sqrtf(x * x + y * y + z * z); }
+    float distance(const Vector3& o) const { return (*this - o).length(); }
 };
 
 struct Matrix4x4 {
     float m[4][4];
 };
 
-inline uintptr_t il2cpp_base = 0;
+inline uintptr_t lib_base = 0;
 
 inline bool init() {
     if (!mem::init(PACKAGE)) return false;
-    il2cpp_base = mem::get_module_base(mem::game_pid, LIB_NAME);
-    return il2cpp_base != 0;
+    lib_base = mem::get_module_base(mem::game_pid, LIB_NAME);
+    return lib_base != 0;
+}
+
+// TypeInfo -> Class -> static_fields -> first field (singleton instance)
+inline uintptr_t get_singleton(uintptr_t ti_offset) {
+    uintptr_t cls = mem::read<uintptr_t>(lib_base + ti_offset);
+    if (!cls) return 0;
+    uintptr_t sf = mem::read<uintptr_t>(cls + field::kStaticFields);
+    if (!sf) return 0;
+    return mem::read<uintptr_t>(sf);
+}
+
+inline int get_player_count() {
+    uintptr_t reg = get_singleton(typeinfo::kRegistry);
+    if (!reg || field::kRegistryPlayerList == 0) return 0;
+    uintptr_t list = mem::read<uintptr_t>(reg + field::kRegistryPlayerList);
+    if (!list) return 0;
+    return mem::read<int>(list + field::kListCount);
+}
+
+inline uintptr_t get_player(int idx) {
+    uintptr_t reg = get_singleton(typeinfo::kRegistry);
+    if (!reg || field::kRegistryPlayerList == 0) return 0;
+    uintptr_t list = mem::read<uintptr_t>(reg + field::kRegistryPlayerList);
+    if (!list) return 0;
+    uintptr_t items = mem::read<uintptr_t>(list + field::kListItems);
+    if (!items) return 0;
+    return mem::read<uintptr_t>(items + field::kArrayStart + idx * 0x8);
+}
+
+inline Vector3 get_position(uintptr_t player) {
+    if (field::kPlayerPosition == 0) return {};
+    return mem::read<Vector3>(player + field::kPlayerPosition);
+}
+
+inline int get_team(uintptr_t player) {
+    if (field::kPlayerTeamId == 0) return -1;
+    return mem::read<int>(player + field::kPlayerTeamId);
+}
+
+inline bool is_alive(uintptr_t player) {
+    if (field::kPlayerIsAlive == 0) return true;
+    return mem::read<bool>(player + field::kPlayerIsAlive);
+}
+
+inline float get_health(uintptr_t player) {
+    if (field::kPlayerStats == 0 || field::kStatsHp == 0) return 100.f;
+    uintptr_t stats = mem::read<uintptr_t>(player + field::kPlayerStats);
+    if (!stats) return 0.f;
+    return mem::read<float>(stats + field::kStatsHp);
+}
+
+inline float get_max_health(uintptr_t player) {
+    if (field::kPlayerStats == 0 || field::kStatsMaxHp == 0) return 100.f;
+    uintptr_t stats = mem::read<uintptr_t>(player + field::kPlayerStats);
+    if (!stats) return 100.f;
+    return mem::read<float>(stats + field::kStatsMaxHp);
+}
+
+// FILL: Camera.main -> viewProjectionMatrix
+// Нужен TypeInfo адрес Camera или статический указатель на main camera
+inline Matrix4x4 get_view_matrix() {
+    return {};
 }
 
 inline bool world_to_screen(const Vector3& world, const Matrix4x4& vm, float sw, float sh, Vector3& out) {
@@ -72,47 +168,6 @@ inline bool world_to_screen(const Vector3& world, const Matrix4x4& vm, float sw,
     out.y = (sh / 2.f) - (sh / 2.f) * y / w;
     out.z = w;
     return true;
-}
-
-// Читает список игроков. Возвращает количество.
-inline int get_player_count() {
-    uintptr_t mgr = mem::read<uintptr_t>(il2cpp_base + offsets::GameManager_Instance);
-    if (!mgr) return 0;
-    uintptr_t list = mem::read<uintptr_t>(mgr + offsets::GameManager_PlayerList);
-    if (!list) return 0;
-    return mem::read<int>(list + offsets::List_Count);
-}
-
-inline uintptr_t get_player(int idx) {
-    uintptr_t mgr = mem::read<uintptr_t>(il2cpp_base + offsets::GameManager_Instance);
-    if (!mgr) return 0;
-    uintptr_t list = mem::read<uintptr_t>(mgr + offsets::GameManager_PlayerList);
-    if (!list) return 0;
-    uintptr_t items = mem::read<uintptr_t>(list + offsets::List_Items);
-    if (!items) return 0;
-    return mem::read<uintptr_t>(items + 0x20 + idx * 0x8); // array items start at +0x20
-}
-
-inline Vector3 get_position(uintptr_t player) {
-    return mem::read<Vector3>(player + offsets::FPSController_Position);
-}
-
-inline int get_team(uintptr_t player) {
-    return mem::read<int>(player + offsets::FPSController_Team);
-}
-
-inline bool is_alive(uintptr_t player) {
-    return mem::read<bool>(player + offsets::FPSController_IsAlive);
-}
-
-inline float get_health(uintptr_t player) {
-    return mem::read<float>(player + offsets::FPSController_Health);
-}
-
-inline Matrix4x4 get_view_matrix() {
-    uintptr_t cam = mem::read<uintptr_t>(il2cpp_base + offsets::Camera_Main);
-    if (!cam) return {};
-    return mem::read<Matrix4x4>(cam + offsets::Camera_ViewMatrix);
 }
 
 } // namespace game

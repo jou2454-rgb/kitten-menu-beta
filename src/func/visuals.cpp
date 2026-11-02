@@ -74,7 +74,8 @@ void render(float screen_w, float screen_h) {
 
         if (esp_health) {
             float hp = game::get_health(player);
-            draw_health_bar(dl, box_x, box_y, box_h, hp, 100.f);
+            float max_hp = game::get_max_health(player);
+            draw_health_bar(dl, box_x, box_y, box_h, hp, max_hp);
         }
 
         if (esp_name) {
